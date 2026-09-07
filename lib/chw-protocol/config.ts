@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { ProtocolError } from "./types";
 
-const deploymentSchema = z.enum([
+const deploymentValues = [
   "development",
   "test",
   "ci",
@@ -13,8 +13,19 @@ const deploymentSchema = z.enum([
   "pilot",
   "production",
   "mainnet",
-]);
-const modeSchema = z.enum(["mock", "live"]);
+] as const;
+const modeValues = ["mock", "live"] as const;
+
+// Zod's default enum error omits the offending value; a fail-fast schema
+// error must name it so a misconfigured deployment is diagnosable from logs.
+const deploymentSchema = z.enum(deploymentValues, {
+  error: (issue) =>
+    `Invalid LAFIYA_DEPLOYMENT_ENV value: ${JSON.stringify(issue.input)}. Expected one of ${deploymentValues.join(", ")}.`,
+});
+const modeSchema = z.enum(modeValues, {
+  error: (issue) =>
+    `Invalid ATTESTATION_MODE value: ${JSON.stringify(issue.input)}. Expected one of ${modeValues.join(", ")}.`,
+});
 
 export type ProtocolRuntimeConfig = {
   deployment: z.infer<typeof deploymentSchema>;

@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { createHash } from "node:crypto";
 
 import { deleteAccountAndData } from "@/lib/account/deleteAccount";
-import { ensureRecordSecret } from "@/lib/attestation/recordSecret";
+import {
+  ensureRecordSecret,
+  secretExistsByUserId,
+} from "@/lib/attestation/recordSecret";
 import {
   createRawCapability,
   digestCapability,
@@ -214,7 +217,8 @@ export async function exportMyProfileData(): Promise<
   ]);
   if (revisions.error || consents.error || requests.error || avatars.error)
     return {
-      error: "Could not assemble your complete profile export. Please try again.",
+      error:
+        "Could not assemble your complete profile export. Please try again.",
     };
   const payload = {
     profile,

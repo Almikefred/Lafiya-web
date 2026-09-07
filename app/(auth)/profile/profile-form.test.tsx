@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import * as React from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -99,7 +99,10 @@ describe("ProfileForm Accessibility", () => {
       "Allergies list error",
     );
 
-    // Check emergency contacts inputs
+    // Check emergency contacts inputs. With no contacts yet, the field only
+    // renders an "Add contact" prompt — the row (and its inputs) appears
+    // once a contact is added.
+    fireEvent.click(screen.getByRole("button", { name: /add contact/i }));
     const contactNameInput = screen.getByPlaceholderText(/name/i);
     expect(contactNameInput).toHaveAttribute("aria-invalid", "true");
     expect(contactNameInput).toHaveAttribute(
@@ -122,8 +125,11 @@ describe("ProfileForm Accessibility", () => {
 
     render(<ProfileForm profile={null} userId="user-123" />);
 
-    const alertMessage = screen.getByRole("alert");
-    expect(alertMessage).toHaveTextContent("Please correct the errors below.");
+    // The "missing critical info" banner is also role="alert" and legitimately
+    // renders alongside the general form error for a profile with no blood
+    // group/allergies set, so scope to the one carrying this message.
+    const alertMessage = screen.getByText("Please correct the errors below.");
+    expect(alertMessage).toHaveAttribute("role", "alert");
   });
 
   it("announces success message using role='status'", () => {

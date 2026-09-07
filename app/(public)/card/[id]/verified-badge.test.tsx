@@ -27,7 +27,9 @@ describe("VerifiedBadge", () => {
 
     const icon = screen.getByTestId("unverified-icon");
     expect(icon).toBeInTheDocument();
-    expect(icon).not.toHaveAttribute("aria-hidden");
+    // Decorative icon: the parent span's aria-label already carries the
+    // accessible name, so the icon itself is hidden from assistive tech.
+    expect(icon).toHaveAttribute("aria-hidden", "true");
 
     expect(container.firstChild).toMatchSnapshot();
   });

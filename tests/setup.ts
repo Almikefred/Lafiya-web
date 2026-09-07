@@ -12,6 +12,20 @@ import "vitest-axe/extend-expect";
 // crash every test file that transitively reaches it.
 vi.mock("server-only", () => ({}));
 
+// @sentry/nextjs's build-time webpack instrumentation detects "browser vs.
+// Node" via `typeof document === 'undefined'`, which is false under jsdom —
+// so importing it here resolves `document.baseURI` (an http: URL) where it
+// expects a file: URL, and every transitive importer crashes at module load.
+// Real Sentry calls are also unwanted noise in unit tests, so mock it globally.
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn(),
+  withScope: vi.fn(
+    (cb: (scope: { setExtras: (...args: unknown[]) => void }) => void) =>
+      cb({ setExtras: vi.fn() }),
+  ),
+}));
+
 expect.extend(matchers);
 
 // Vitest doesn't expose test globals by default, so RTL's own auto-cleanup

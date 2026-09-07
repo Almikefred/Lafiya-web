@@ -39,7 +39,19 @@ const fixtureCard = {
 };
 
 function mockRpc(result: { data: unknown; error: unknown }) {
-  const fakeClient = { rpc: vi.fn().mockResolvedValue(result) };
+  const fakeClient = {
+    rpc: vi.fn().mockResolvedValue(result),
+    // Ownership check (Issue #383): no signed-in visitor by default, so
+    // isOwner resolves false without needing a `profiles` lookup.
+    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) },
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+        }),
+      }),
+    }),
+  };
   vi.mocked(createClient).mockResolvedValue(
     fakeClient as unknown as Awaited<ReturnType<typeof createClient>>,
   );

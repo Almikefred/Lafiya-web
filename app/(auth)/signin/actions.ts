@@ -15,7 +15,11 @@ import { formatZodError } from "@/lib/validation/zod";
 const signInSchema = z.object({
   email: z.email("Enter a valid email address"),
   password: z.string().min(1, "Password is required"),
-  rememberMe: z.enum(["on"]).optional(),
+  // FormData.get() returns null (not undefined) for an absent field — an
+  // unchecked "remember me" checkbox is simply omitted from the submission —
+  // so this must accept null, not just undefined, or every sign-in with the
+  // box unchecked would fail validation.
+  rememberMe: z.enum(["on"]).nullish(),
 });
 
 export interface SignInState {

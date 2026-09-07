@@ -122,7 +122,7 @@ export default async function PublicCardPage({
       {/* EmergencyCardContent below renders its own full-page <main> wrapper
           (mx-auto max-w-xl px-4 py-8 ...), so this header only matches its
           horizontal alignment rather than duplicating the whole container. */}
-      <div className="mx-auto flex w-full max-w-xl items-center justify-between px-4 pt-8 sm:px-6 sm:pt-16">
+      <header className="mx-auto flex w-full max-w-xl items-center justify-between px-4 pt-8 sm:px-6 sm:pt-16">
         <h1 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
           Emergency card
         </h1>
@@ -132,7 +132,7 @@ export default async function PublicCardPage({
         >
           Report an issue
         </a>
-      </div>
+      </header>
       <EmergencyCardContent
         card={data[0]}
         authorizationKind="legacy"

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { PayoutIndexer } from "./indexer";
+import type { LedgerCheckpoint } from "./ledger-awareness";
 import type {
   AttestationEvent,
   AttestationSource,
@@ -37,6 +38,7 @@ type Row = {
 
 class MemoryStore implements PayoutIndexerStore {
   cursors = new Map<StreamName, string>();
+  checkpoints = new Map<StreamName, LedgerCheckpoint>();
   rows = new Map<string, Row>();
   observations = new Map<string, PayoutEvent>();
   failAfterApply: number | null = null;
@@ -48,6 +50,35 @@ class MemoryStore implements PayoutIndexerStore {
   async saveCursor(stream: StreamName, cursor: string) {
     this.cursors.set(stream, cursor);
   }
+  async getLedgerCheckpoint(stream: StreamName) {
+    return this.checkpoints.get(stream) ?? null;
+  }
+  async updateLedgerCheckpoint(
+    stream: StreamName,
+    ledgerNumber: bigint,
+    cursor: string,
+    lastTxHash: string | null,
+  ) {
+    this.checkpoints.set(stream, {
+      ledgerNumber,
+      cursor,
+      confirmedAt: new Date(),
+      lastTxHash,
+    });
+  }
+  async detectLedgerReorg() {
+    return false;
+  }
+  async recordAttestationEvidence() {
+    return { success: true, reason: "recorded" };
+  }
+  async recordPayoutEvidence() {
+    return { success: true, reason: "recorded" };
+  }
+  async getConflictingRecords() {
+    return [];
+  }
+  async reconcileConflictingRecord() {}
   async applyAttestation(event: AttestationEvent) {
     this.maybeCrash();
     const observation = this.observations.get(event.recordHash);
@@ -58,7 +89,12 @@ class MemoryStore implements PayoutIndexerStore {
         observation?.transactionHash ?? existing?.payoutTxHash ?? null,
     });
     if (observation) this.observations.delete(event.recordHash);
-    return observation ? "paid_from_observation" : "pending";
+    return {
+      decision: observation ? "paid_from_observation" : "pending",
+      evidenceRecorded: true,
+      reorgDetected: false,
+      conflictLogged: false,
+    };
   }
   async applyPayout(event: PayoutEvent) {
     this.maybeCrash();
@@ -68,10 +104,20 @@ class MemoryStore implements PayoutIndexerStore {
         status: "paid",
         payoutTxHash: event.transactionHash,
       });
-      return "paid";
+      return {
+        decision: "paid",
+        evidenceRecorded: true,
+        reorgDetected: false,
+        conflictLogged: false,
+      };
     }
     this.observations.set(event.recordHash, event);
-    return "awaiting_attestation";
+    return {
+      decision: "awaiting_attestation",
+      evidenceRecorded: true,
+      reorgDetected: false,
+      conflictLogged: false,
+    };
   }
   private maybeCrash() {
     this.applies += 1;

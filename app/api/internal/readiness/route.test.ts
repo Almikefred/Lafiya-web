@@ -17,7 +17,12 @@ vi.mock("@/lib/env-server", () => ({
 }));
 vi.mock("@stellar/stellar-sdk", () => ({
   rpc: {
-    Server: vi.fn().mockImplementation(() => ({ getHealth: mocks.getHealth })),
+    // `new rpc.Server(...)` requires a real constructor — an arrow-function
+    // mock implementation isn't constructible and silently drops the
+    // returned instance shape.
+    Server: vi.fn().mockImplementation(function () {
+      return { getHealth: mocks.getHealth };
+    }),
   },
 }));
 

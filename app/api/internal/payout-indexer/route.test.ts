@@ -23,9 +23,11 @@ vi.mock("@/lib/env-server", () => ({
   serverEnv: mocks.serverEnv,
 }));
 vi.mock("@/lib/stellar/payout-indexer/indexer", () => ({
-  PayoutIndexer: vi.fn().mockImplementation(() => ({
-    runOnce: mocks.runOnce,
-  })),
+  // `new PayoutIndexer(...)` requires a real constructor — an arrow-function
+  // mock implementation isn't constructible.
+  PayoutIndexer: vi.fn().mockImplementation(function () {
+    return { runOnce: mocks.runOnce };
+  }),
 }));
 vi.mock("@/lib/stellar/payout-indexer/sources", () => ({
   HorizonPayoutSource: vi.fn(),
@@ -52,10 +54,13 @@ describe("POST /api/internal/payout-indexer", () => {
     };
     mocks.runOnce.mockResolvedValue(summary);
 
-    const request = new Request("http://localhost/api/internal/payout-indexer", {
-      method: "POST",
-      headers: { authorization: "Bearer test-cron-secret" },
-    });
+    const request = new Request(
+      "http://localhost/api/internal/payout-indexer",
+      {
+        method: "POST",
+        headers: { authorization: "Bearer test-cron-secret" },
+      },
+    );
 
     const response = await POST(request);
 
@@ -67,9 +72,12 @@ describe("POST /api/internal/payout-indexer", () => {
   it("rejects a call with no Authorization header (unauthenticated/external caller)", async () => {
     mocks.getRuntimeConfig.mockReturnValue(enabledConfig());
 
-    const request = new Request("http://localhost/api/internal/payout-indexer", {
-      method: "POST",
-    });
+    const request = new Request(
+      "http://localhost/api/internal/payout-indexer",
+      {
+        method: "POST",
+      },
+    );
 
     const response = await POST(request);
 
@@ -81,10 +89,13 @@ describe("POST /api/internal/payout-indexer", () => {
   it("rejects a call bearing an incorrect/forged secret", async () => {
     mocks.getRuntimeConfig.mockReturnValue(enabledConfig());
 
-    const request = new Request("http://localhost/api/internal/payout-indexer", {
-      method: "POST",
-      headers: { authorization: "Bearer wrong-secret" },
-    });
+    const request = new Request(
+      "http://localhost/api/internal/payout-indexer",
+      {
+        method: "POST",
+        headers: { authorization: "Bearer wrong-secret" },
+      },
+    );
 
     const response = await POST(request);
 
@@ -93,11 +104,16 @@ describe("POST /api/internal/payout-indexer", () => {
   });
 
   it("returns 503 (not authorization) when the indexer is not configured, without leaking whether auth was checked", async () => {
-    mocks.getRuntimeConfig.mockReturnValue({ payoutIndexer: { enabled: false } });
-
-    const request = new Request("http://localhost/api/internal/payout-indexer", {
-      method: "POST",
+    mocks.getRuntimeConfig.mockReturnValue({
+      payoutIndexer: { enabled: false },
     });
+
+    const request = new Request(
+      "http://localhost/api/internal/payout-indexer",
+      {
+        method: "POST",
+      },
+    );
 
     const response = await POST(request);
 

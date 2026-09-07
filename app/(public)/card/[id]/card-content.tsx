@@ -28,8 +28,10 @@ function formatRelativeTime(value: string | null): string {
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffSeconds < 60) return "Just now";
-  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  if (diffMinutes < 60)
+    return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
+  if (diffHours < 24)
+    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
   if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
@@ -61,12 +63,17 @@ export function EmergencyCardContent({
 
   return (
     <>
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4 focus:text-black dark:focus:bg-black dark:focus:text-white"
-      >
-        Skip to emergency information
-      </a>
+      {/* A skip link outside every landmark fails axe's "region" rule
+          (all page content must be contained by a landmark), so it gets its
+          own nav landmark rather than sitting bare before <main>. */}
+      <nav aria-label="Skip links">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4 focus:text-black dark:focus:bg-black dark:focus:text-white"
+        >
+          Skip to emergency information
+        </a>
+      </nav>
       <main
         id="main-content"
         className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-16"
@@ -235,9 +242,9 @@ export function EmergencyCardContent({
           role="note"
           className="mt-4 text-xs text-zinc-500 dark:text-zinc-500"
         >
-          Lafiya is pre-alpha software on the Stellar testnet, not yet
-          audited, and not a medical device. Not a substitute for
-          professional medical judgment.
+          Lafiya is pre-alpha software on the Stellar testnet, not yet audited,
+          and not a medical device. Not a substitute for professional medical
+          judgment.
         </p>
       </main>
       <OfflineEnvelopeSource

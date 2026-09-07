@@ -74,8 +74,15 @@ export function signAddressOwnership(
   secretKey: string,
   challenge: string,
 ): string {
-  return Keypair.fromSecret(secretKey).signMessage(challenge).toString("hex");
+  // `signMessage` returns a plain Uint8Array (not a Node Buffer), so
+  // `.toString("hex")` would produce a comma-separated decimal list instead
+  // of hex — route it through Buffer.from to hex-encode explicitly.
+  return Buffer.from(
+    Keypair.fromSecret(secretKey).signMessage(challenge),
+  ).toString("hex");
 }
+
+const HEX_SIGNATURE_PATTERN = /^[0-9a-fA-F]+$/;
 
 /**
  * Verify an enrollment proof: the given signature must be a valid SEP-53
@@ -86,6 +93,18 @@ export function verifyAddressOwnership(
   challenge: string,
   signatureHex: string,
 ): boolean {
+  // `Buffer.from(str, "hex")` silently drops invalid trailing characters
+  // instead of throwing, which would let a malformed signature verify
+  // against a truncated/empty buffer rather than failing loudly.
+  if (
+    signatureHex.length === 0 ||
+    signatureHex.length % 2 !== 0 ||
+    !HEX_SIGNATURE_PATTERN.test(signatureHex)
+  ) {
+    throw new Error(
+      `verifyAddressOwnership: signatureHex is not valid hex: ${signatureHex}`,
+    );
+  }
   return Keypair.fromPublicKey(publicKey).verifyMessage(
     challenge,
     Buffer.from(signatureHex, "hex"),

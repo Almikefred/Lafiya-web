@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { upsertProfile } from "./actions";
+import { repairProfileSecret, upsertProfile } from "./actions";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
@@ -15,6 +15,13 @@ vi.mock("@/lib/logging/logger", () => ({
 }));
 
 const { createClient } = await import("@/lib/supabase/server");
+const mockEnsureRecordSecret = vi.mocked(
+  (await import("@/lib/attestation/recordSecret")).ensureRecordSecret,
+);
+const mockSecretExistsByUserId = vi.mocked(
+  (await import("@/lib/attestation/recordSecret")).secretExistsByUserId,
+);
+const mockLogError = vi.mocked((await import("@/lib/logging/logger")).logError);
 const authUser = { id: crypto.randomUUID() };
 
 function form(expected?: string) {
@@ -113,9 +120,7 @@ describe("repairProfileSecret", () => {
   });
 
   function mockAuth(user: { id: string } | null) {
-    (
-      mockCreateClient.createClient as ReturnType<typeof vi.fn>
-    ).mockResolvedValue({
+    (createClient as ReturnType<typeof vi.fn>).mockResolvedValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({
           data: { user },
@@ -142,9 +147,7 @@ describe("repairProfileSecret", () => {
 
   it("returns not_found when profile does not exist", async () => {
     const userId = crypto.randomUUID();
-    (
-      mockCreateClient.createClient as ReturnType<typeof vi.fn>
-    ).mockResolvedValue({
+    (createClient as ReturnType<typeof vi.fn>).mockResolvedValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({
           data: { user: { id: userId } },

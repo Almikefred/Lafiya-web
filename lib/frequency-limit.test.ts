@@ -42,7 +42,10 @@ function createNaiveWindow(maxCount: number, windowSeconds: number) {
   let count = 0;
 
   return function tick(nowMs: number) {
-    if (windowStartMs === null || nowMs - windowStartMs >= windowSeconds * 1000) {
+    if (
+      windowStartMs === null ||
+      nowMs - windowStartMs >= windowSeconds * 1000
+    ) {
       windowStartMs = nowMs;
       count = 0;
     }
@@ -85,7 +88,11 @@ describe("checkAndIncrementFrequency / clock resilience", () => {
       data: tick(Date.now()),
       error: null,
     }));
-    const first = await checkAndIncrementFrequency("user:1", maxCount, windowSeconds);
+    const first = await checkAndIncrementFrequency(
+      "user:1",
+      maxCount,
+      windowSeconds,
+    );
     expect(first.allowed).toBe(true);
 
     // Fill the window.
@@ -103,7 +110,7 @@ describe("checkAndIncrementFrequency / clock resilience", () => {
     // before windowStartMs", fail the `>= windowSeconds * 1000` check, and
     // keep accumulating against the same window indefinitely, or could
     // produce a negative retry-after that reads as "already expired".
-    vi.setSystemTime(new Date("2026-01-01T23:50:00.000Z"));
+    vi.setSystemTime(new Date("2025-12-31T23:50:00.000Z"));
 
     const resultCount = tick(Date.now());
     rpcSingleMock.mockImplementationOnce(async () => ({
@@ -252,9 +259,9 @@ describe("checkAndIncrementFrequency", () => {
       single: () => Promise.resolve({ data: null, error: dbError }),
     });
 
-    await expect(
-      checkAndIncrementFrequency("k", 5, 60),
-    ).rejects.toMatchObject({ message: "connection refused" });
+    await expect(checkAndIncrementFrequency("k", 5, 60)).rejects.toMatchObject({
+      message: "connection refused",
+    });
   });
 });
 
@@ -265,7 +272,9 @@ describe("clearFrequencyLimit", () => {
   });
 
   it("deletes the row for the given key without error", async () => {
-    await expect(clearFrequencyLimit("user:abc:photo-upload")).resolves.toBeUndefined();
+    await expect(
+      clearFrequencyLimit("user:abc:photo-upload"),
+    ).resolves.toBeUndefined();
     expect(eqMock).toHaveBeenCalledWith("key", "user:abc:photo-upload");
   });
 

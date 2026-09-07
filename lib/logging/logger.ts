@@ -10,7 +10,9 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   error: 3,
 };
 
-let currentLogLevel: LogLevel = (process.env.NODE_ENV === "production" ? "warn" : "debug") as LogLevel;
+let currentLogLevel: LogLevel = (
+  process.env.NODE_ENV === "production" ? "warn" : "debug"
+) as LogLevel;
 
 export function setLogLevel(level: LogLevel): void {
   currentLogLevel = level;
@@ -22,6 +24,14 @@ export function getLogLevel(): LogLevel {
 
 function shouldLog(level: LogLevel): boolean {
   return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[currentLogLevel];
+}
+
+// `JSON.stringify` throws on BigInt (e.g. a ledger number in log context),
+// which would otherwise turn a log call into a thrown error for its caller.
+function stringifyLogPayload(payload: unknown): string {
+  return JSON.stringify(payload, (_key, value) =>
+    typeof value === "bigint" ? value.toString() : value,
+  );
 }
 
 /**
@@ -213,7 +223,7 @@ export function logError(
     context: redactedContext,
   };
 
-  console.error(JSON.stringify(logPayload));
+  console.error(stringifyLogPayload(logPayload));
 
   try {
     if (error instanceof Error) {
@@ -274,7 +284,7 @@ export function logInfo(
     context: redactedContext,
   };
 
-  console.log(JSON.stringify(logPayload));
+  console.log(stringifyLogPayload(logPayload));
 }
 
 /**
@@ -302,7 +312,7 @@ export function logWarn(
     context: redactedContext,
   };
 
-  console.warn(JSON.stringify(logPayload));
+  console.warn(stringifyLogPayload(logPayload));
 }
 
 /**
@@ -331,5 +341,5 @@ export function logDebug(
     context: redactedContext,
   };
 
-  console.log(JSON.stringify(logPayload));
+  console.log(stringifyLogPayload(logPayload));
 }
