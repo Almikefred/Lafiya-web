@@ -495,3 +495,8 @@ These works directly informed Lafiya's design and are the intended reading for c
 _Built for the Stellar ecosystem. Open source. Community owned._
 
 </div>
+
+## Handsoff notes
+
+<!-- handsoff-issue-620 -->
+- #620: [API] Deliver HMAC-signed webhooks to partners for attestation and verification events
